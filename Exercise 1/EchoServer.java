@@ -20,37 +20,33 @@ import java.io.InputStreamReader;
 public final class EchoServer {
 
     public static void main(String[] args) throws Exception {
-
-        boolean initialRun = true;
         try (ServerSocket serverSocket = new ServerSocket(22222)) {
             while (true) {
-                try (Socket socket = serverSocket.accept()) {
-                    String address = socket.getInetAddress().getHostAddress();
-					
-                    if(initialRun) {
-                        System.out.printf("Client connected: %s%n", address);
-                        initialRun = false;
-                    }
-					
-                    InputStream inStr = socket.getInputStream();
-                    InputStreamReader inStrRead = new InputStreamReader(inStr, "UTF-8");
-					BufferedReader br = new BufferedReader(inStrRead);
-                    String msg = br.readLine();
-					
-                    if(!msg.equals("exit")) {
-                        OutputStream outStr = socket.getOutputStream();
-                        PrintStream outPrint = new PrintStream(outStr, true, "UTF-8");
-                        String serverSend = "Server> " + msg;
-                        outPrint.println(serverSend);
-					} else {
-                        System.out.printf("Client disconnected: %s%n", address);
-                        initialRun = true;
-                    }
-				}
-					
-			}
-            
+				Socket socket = serverSocket.accept();
+				Runnable client = () -> {
+					try{
+						String address = socket.getInetAddress().getHostAddress();
+						System.out.printf("Client connected: %s%n", address);
+						
+						OutputStream os = socket.getOutputStream();
+						PrintStream out = new PrintStream(os);
+						
+						InputStream is = socket.getInputStream();
+						InputStreamReader isr = new InputStreamReader(is, "UTF-8");
+						Bufferedreader br = new BufferedReader(isr);
+						String msg;
+						
+						while((msg = br.readLine()) != null){
+							out.println(msg);
+						}
+						
+						System.out.printf("Hi %s, thanks for connecting!%n", address);
+						socket.close();
+                }
+				catch (Exception e){}
+            };
+			Thread clientThread = new Thread(client);
+			clientThread.start();
         }
     }
-    
 }
